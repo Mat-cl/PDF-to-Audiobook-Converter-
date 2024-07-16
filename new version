@@ -1,0 +1,59 @@
+import PyPDF2
+import pyttsx3
+import os
+
+def read_pdf_and_convert_to_audio(pdf_path, start_page, end_page, output_audio_path):
+    # Inicializar pyttsx3
+    engine = pyttsx3.init()
+    engine.setProperty('rate', 150)  # Velocidad del habla
+
+    # Abrir el archivo PDF
+    with open(pdf_path, "rb") as file:
+        pdf_reader = PyPDF2.PdfReader(file)
+        
+        # Extraer el texto de la primera página
+        text = pdf_reader.pages[0].extract_text()
+        
+        # Extraer el texto de las páginas especificadas
+        for page_num in range(start_page, end_page + 1):
+            if page_num < len(pdf_reader.pages):
+                page = pdf_reader.pages[page_num]
+                text += page.extract_text()
+        
+        # Verificar si se extrajo texto
+        if not text.strip():
+            print("No se extrajo texto del PDF.")
+            return
+        
+        # Dividir el texto en partes más pequeñas
+        chunk_size = 5000  # Tamaño máximo del texto por parte
+        chunks = [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
+        
+        # Crear el archivo de audio
+        if os.path.exists(output_audio_path):
+            os.remove(output_audio_path)
+        
+        for i, chunk in enumerate(chunks):
+            temp_audio_path = f"temp_part_{i}.mp3"
+            engine.save_to_file(chunk, temp_audio_path)
+            engine.runAndWait()
+            
+            # Combinar las partes de audio en un solo archivo
+            if i == 0:
+                os.rename(temp_audio_path, output_audio_path)
+            else:
+                with open(output_audio_path, 'ab') as f:
+                    with open(temp_audio_path, 'rb') as temp_file:
+                        f.write(temp_file.read())
+                os.remove(temp_audio_path)
+
+        print(f"Audio guardado en {output_audio_path}")
+
+# Ruta del PDF y configuración de las páginas
+pdf_path = r"C:\Users\matmr\Downloads\Technical Analysis.pdf"
+output_audio_path = r"C:\Users\matmr\Downloads\Technical_Analysis_Audio.mp3"
+start_page = 31  # 0-indexed, así que la página 32 es la 31
+end_page = 609   # 0-indexed, así que la página 610 es la 609
+
+# Convertir el PDF a audio
+read_pdf_and_convert_to_audio(pdf_path, start_page, end_page, output_audio_path)
